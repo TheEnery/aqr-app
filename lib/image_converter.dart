@@ -44,7 +44,8 @@ class ImageUtils {
     final int uvRowStride = cameraImage.planes[1].bytesPerRow;
     final int uvPixelStride = cameraImage.planes[1].bytesPerPixel!;
 
-    final image = imglib.Image(width: imageWidth, height: imageHeight);
+    // rotate here
+    final image = imglib.Image(width: imageHeight, height: imageWidth);
 
     for (int h = 0; h < imageHeight; h++) {
       int uvh = (h / 2).floor();
@@ -76,7 +77,8 @@ class ImageUtils {
         g = g.clamp(0, 255);
         b = b.clamp(0, 255);
 
-        image.setPixelRgb(w, h, r, g, b);
+        // rotate here
+        image.setPixelRgb(imageHeight - 1 - h, w, r, g, b);
       }
     }
 
