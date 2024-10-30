@@ -3,7 +3,7 @@ import '../general.dart';
 import 'package:image/image.dart' as imglib;
 
 void generateComparisonImage() {
-  final image = imglib.Image(width: width, height: height);
+  final image = imglib.Image(width: imageWidth, height: imageHeight);
 
   final diff1samples = <List<int>>[];
   generateComparisonSamples(diff1samples, 8);

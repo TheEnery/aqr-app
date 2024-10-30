@@ -2,8 +2,8 @@ import 'package:camera/camera.dart';
 import 'package:cqr/camera_controller_extension.dart';
 import 'package:flutter/material.dart';
 
-import 'file:///home/enery/Documents/cqr/test/image_testers/test_color_diff.dart';
-import 'file:///home/enery/Documents/cqr/test/image_testers/test_palette_diff.dart';
+import 'file:///home/enery/Documents/cqr/test/image_testers/test_color_difference.dart';
+import 'file:///home/enery/Documents/cqr/test/image_testers/test_palette_difference.dart';
 
 late List<CameraDescription> _cameras;
 
@@ -82,11 +82,24 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Scanner'),
         centerTitle: true,
       ),
-      body: Center(child: _getCamera()),
-      floatingActionButton: Row(
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _getCamera(),
+            _getButtons(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _getButtons() {
+    return Builder(builder: (context) {
+      return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          FloatingActionButton(
+          TextButton(
             onPressed: () async {
               final image = await controller.inMemoryImage();
 
@@ -121,27 +134,51 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text('Scan'),
           ),
           const SizedBox(width: 16.0),
-          FloatingActionButton(
+          TextButton(
             onPressed: () async {
               final image = await controller.inMemoryImage();
 
-              testColorDiff(image);
+              if (context.mounted) {
+                showBottomSheet(
+                    context: context,
+                    builder: (context) => testColorDifference(image));
+              }
             },
             child: const Text('Test1'),
           ),
           const SizedBox(width: 16.0),
-          FloatingActionButton(
+          TextButton(
             onPressed: () async {
               final image = await controller.inMemoryImage();
+              int? rowsInPalette;
 
-              testPaletteDiff(image);
+              if (context.mounted) {
+                rowsInPalette = await showDialog<int>(
+                  context: context,
+                  builder: (context) => const IntDialog(
+                    min: 1,
+                    max: 2,
+                    title: Text('Enter the number of palettes'),
+                  ),
+                );
+                if (rowsInPalette == null) {
+                  return;
+                }
+              }
+
+              if (context.mounted) {
+                showBottomSheet(
+                  context: context,
+                  builder: (context) => testPaletteDifference(image,
+                      rowsInPalette: rowsInPalette!),
+                );
+              }
             },
             child: const Text('Test2'),
           ),
         ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
+      );
+    });
   }
 
   Widget _getCamera() {
@@ -160,6 +197,74 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class IntDialog extends StatefulWidget {
+  final int min, max;
+  final Text title;
+  const IntDialog({
+    super.key,
+    required this.min,
+    required this.max,
+    required this.title,
+  });
+
+  @override
+  State<StatefulWidget> createState() => _IntDialogState();
+}
+
+class _IntDialogState extends State<IntDialog> {
+  late final TextEditingController controller;
+
+  @override
+  void initState() {
+    controller = TextEditingController();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: widget.title,
+      content: TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          hintText: 'The number from ${widget.min} to ${widget.max}',
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          child: const Text('Cancel'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        TextButton(
+          child: const Text('Ok'),
+          onPressed: () {
+            int? value = int.tryParse(controller.text);
+            if (value != null && value >= widget.min && value <= widget.max) {
+              Navigator.of(context).pop(value);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content:
+                      Text('Please, enter a valid number within the number'),
+                ),
+              );
+            }
+          },
+        ),
+      ],
     );
   }
 }

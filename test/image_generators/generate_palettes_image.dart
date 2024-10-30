@@ -6,7 +6,7 @@ import 'package:image/image.dart' as imglib;
 import '../general.dart';
 
 void generatePalettesImage() {
-  final image = imglib.Image(width: width, height: height);
+  final image = imglib.Image(width: imageWidth, height: imageHeight);
 
   final rgb8samples = [
     [0, 0, 0],
