@@ -1,26 +1,22 @@
-import 'dart:io';
 import '../general.dart';
 import 'package:image/image.dart' as imglib;
 
-void generateComparisonImage() {
-  final image = imglib.Image(width: imageWidth, height: imageHeight);
+List<RgbList> generateComparisonImage() {
+  final diff1samples = _generateComparisonSamples(8);
 
-  final diff1samples = <List<int>>[];
-  generateComparisonSamples(diff1samples, 8);
-  fillTestRow(diff1samples, image, 0);
+  final diff2samples = _generateComparisonSamples(16);
 
-  final diff2samples = <List<int>>[];
-  generateComparisonSamples(diff2samples, 16);
-  fillTestRow(diff2samples, image, 1);
+  final diff3samples = _generateComparisonSamples(24);
 
-  final diff3samples = <List<int>>[];
-  generateComparisonSamples(diff3samples, 24);
-  fillTestRow(diff3samples, image, 3);
+  final diff4samples = _generateComparisonSamples(32);
 
-  final diff4samples = <List<int>>[];
-  generateComparisonSamples(diff4samples, 32);
-  fillTestRow(diff4samples, image, 6);
+  return diff1samples + diff2samples + diff3samples + diff4samples;
+}
 
-  File('image_generators/output/comparison_image.png')
-      .writeAsBytes(imglib.encodePng(image));
+List<RgbList> _generateComparisonSamples(int count) {
+  final samples = <RgbList>[];
+  for (int i = 0; i < count; i++) {
+    samples.add(imglib.hsvToRgb(i / count, 1, 1));
+  }
+  return samples;
 }

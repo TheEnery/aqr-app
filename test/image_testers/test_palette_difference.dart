@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as imglib;
 
-import '../general.dart' as g;
+import '../general.dart';
+import '../test_result_wrapper.dart';
 
 Widget testPaletteDifference(imglib.Image image, {int rowsInPalette = 2}) {
   int imageWidth = image.width;
-  int sampleSize = imageWidth ~/ g.samplesPerRow;
-  int imageHeight = sampleSize * g.samplesPerColumn;
+  int sampleSize = imageWidth ~/ TestConsts.samplesPerRow;
+  int imageHeight = sampleSize * TestConsts.samplesPerColumn;
 
   List<Widget> metrics = [];
 
@@ -24,9 +25,10 @@ Widget testPaletteDifference(imglib.Image image, {int rowsInPalette = 2}) {
     List<imglib.Pixel> leastAbsoluteErrorSamples = [];
     num leastAbsoluteError = 1000;
 
-    for (int q = 0; q < rowsInPalette * g.samplesPerRow; q++) {
-      for (int w = q + 1; w < rowsInPalette * g.samplesPerRow; w++) {
-        num absoluteError = g.absoluteErrorOfRgb(samples[q], samples[w]);
+    for (int q = 0; q < rowsInPalette * TestConsts.samplesPerRow; q++) {
+      for (int w = q + 1; w < rowsInPalette * TestConsts.samplesPerRow; w++) {
+        num absoluteError =
+            TestFuncs.absoluteErrorOfRgb(samples[q], samples[w]);
         if (absoluteError < leastAbsoluteError) {
           leastAbsoluteError = absoluteError;
           leastAbsoluteErrorSamples = [samples[q], samples[w]];
@@ -49,11 +51,11 @@ Widget testPaletteDifference(imglib.Image image, {int rowsInPalette = 2}) {
     ]);
 
     for (final pixel in samples) {
-      g.highlightPixel(pixel);
+      TestFuncs.highlightPixel(pixel);
     }
   }
 
-  return g.TestResultWrapper(
+  return TestResultWrapper(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
