@@ -1,6 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:cqr/camera_controller_extension.dart';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as imglib;
 
 late List<CameraDescription> _cameras;
 
@@ -18,9 +19,18 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: const HomeScreen(),
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.green,
+          brightness: Brightness.dark,
+        ),
       ),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.green,
+        ),
+      ),
+      themeMode: ThemeMode.system,
     );
   }
 }
@@ -75,42 +85,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Scanner'),
-        centerTitle: true,
-      ),
-      body: Center(child: _getCamera()),
+      body: SafeArea(child: Center(child: _getCamera())),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final image = await controller.inMemoryImage();
-
-          final pixel = image.getPixel(
-              (image.width / 2).round(), (image.height / 2).round());
-
-          if (context.mounted) {
-            final messenger = ScaffoldMessenger.of(context);
-
-            messenger.hideCurrentMaterialBanner();
-
-            messenger.showMaterialBanner(
-              MaterialBanner(
-                leading: Container(
-                  width: 16.0,
-                  height: 16.0,
-                  color: Color.fromRGBO(
-                      pixel.r.toInt(), pixel.g.toInt(), pixel.b.toInt(), 1.0),
-                ),
-                content: Text("R: ${pixel.r} G: ${pixel.g} B: ${pixel.b}"),
-                elevation: 1.0,
-                actions: [
-                  TextButton(
-                    child: const Text('Close'),
-                    onPressed: () => messenger.hideCurrentMaterialBanner(),
-                  ),
-                ],
-              ),
-            );
-          }
+          if (!context.mounted) return;
+          showDialog(
+            context: context,
+            builder: (context) => Image.memory(imglib.encodeBmp(image)),
+          );
         },
         child: const Text('Scan'),
       ),
@@ -123,17 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Text("Something went wrong");
     }
 
-    return CameraPreview(
-      controller,
-      child: Center(
-        child: Container(
-          width: 4,
-          height: 4,
-          decoration: BoxDecoration(
-            border: Border.all(width: 1),
-          ),
-        ),
-      ),
-    );
+    return CameraPreview(controller);
   }
 }

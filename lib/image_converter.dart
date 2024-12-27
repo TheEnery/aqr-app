@@ -1,73 +1,107 @@
 import 'package:image/image.dart' as imglib;
 import 'package:camera/camera.dart';
 
-class ImageUtils {
+class ImageConverter {
   ///
-  /// Converts a [CameraImage] in YUV420 format to [image_lib.Image] in RGB format
+  /// Converts a [CameraImage] to [imglib.Image] in RGB format with rotation correction.
   ///
-  static imglib.Image convertCameraImage(CameraImage cameraImage) {
+  static imglib.Image convertCameraImage(CameraImage cameraImage,
+      {required int rotationDegrees}) {
     if (cameraImage.format.group == ImageFormatGroup.yuv420) {
-      return convertYUV420ToImage(cameraImage);
+      return convertYUV420ToImage(cameraImage,
+          rotationDegrees: rotationDegrees);
     } else if (cameraImage.format.group == ImageFormatGroup.bgra8888) {
-      return convertBGRA8888ToImage(cameraImage);
+      return convertBGRA8888ToImage(cameraImage,
+          rotationDegrees: rotationDegrees);
     } else {
       throw Exception('Undefined image type.');
     }
   }
 
   ///
-  /// Converts a [CameraImage] in BGRA888 format to [image_lib.Image] in RGB format
+  /// Converts a [CameraImage] in BGRA8888 format to [imglib.Image] in RGB format with rotation correction.
   ///
-  static imglib.Image convertBGRA8888ToImage(CameraImage cameraImage) {
-    return imglib.Image.fromBytes(
-      width: cameraImage.planes[0].width!,
-      height: cameraImage.planes[0].height!,
-      bytes: cameraImage.planes[0].bytes.buffer,
-      order: imglib.ChannelOrder.bgra,
-    );
+  static imglib.Image convertBGRA8888ToImage(CameraImage cameraImage,
+      {required int rotationDegrees}) {
+    final width = cameraImage.planes[0].width!;
+    final height = cameraImage.planes[0].height!;
+
+    final rotatedWidth =
+        (rotationDegrees == 90 || rotationDegrees == 270) ? height : width;
+    final rotatedHeight =
+        (rotationDegrees == 90 || rotationDegrees == 270) ? width : height;
+
+    final image = imglib.Image(width: rotatedWidth, height: rotatedHeight);
+
+    (int x, int y) Function(int x, int y) getRotatedPosition =
+        switch (rotationDegrees) {
+      90 => (int x, int y) => (height - 1 - y, x),
+      180 => (int x, int y) => (width - 1 - x, height - 1 - y),
+      270 => (int x, int y) => (y, width - 1 - x),
+      _ => (int x, int y) => (x, y)
+    };
+
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        final bgraOffset = (y * width + x) * 4;
+        final r = cameraImage.planes[0].bytes[bgraOffset + 2];
+        final g = cameraImage.planes[0].bytes[bgraOffset + 1];
+        final b = cameraImage.planes[0].bytes[bgraOffset + 0];
+
+        final (newX, newY) = getRotatedPosition(x, y);
+        image.setPixelRgb(newX, newY, r, g, b);
+      }
+    }
+
+    return image;
   }
 
   ///
-  /// Converts a [CameraImage] in YUV420 format to [image_lib.Image] in RGB format
+  /// Converts a [CameraImage] in YUV420 format to [imglib.Image] in RGB format with rotation correction.
   ///
-  static imglib.Image convertYUV420ToImage(CameraImage cameraImage) {
-    final imageWidth = cameraImage.width;
-    final imageHeight = cameraImage.height;
+  static imglib.Image convertYUV420ToImage(CameraImage cameraImage,
+      {required int rotationDegrees}) {
+    final width = cameraImage.width;
+    final height = cameraImage.height;
+
+    final rotatedWidth =
+        (rotationDegrees == 90 || rotationDegrees == 270) ? height : width;
+    final rotatedHeight =
+        (rotationDegrees == 90 || rotationDegrees == 270) ? width : height;
+
+    final image = imglib.Image(width: rotatedWidth, height: rotatedHeight);
+
+    (int x, int y) Function(int x, int y) getRotatedPosition =
+        switch (rotationDegrees) {
+      90 => (int x, int y) => (height - 1 - y, x),
+      180 => (int x, int y) => (width - 1 - x, height - 1 - y),
+      270 => (int x, int y) => (y, width - 1 - x),
+      _ => (int x, int y) => (x, y)
+    };
 
     final yBuffer = cameraImage.planes[0].bytes;
     final uBuffer = cameraImage.planes[1].bytes;
     final vBuffer = cameraImage.planes[2].bytes;
 
-    final int yRowStride = cameraImage.planes[0].bytesPerRow;
-    final int yPixelStride = cameraImage.planes[0].bytesPerPixel!;
+    final yRowStride = cameraImage.planes[0].bytesPerRow;
+    final yPixelStride = cameraImage.planes[0].bytesPerPixel!;
 
-    final int uvRowStride = cameraImage.planes[1].bytesPerRow;
-    final int uvPixelStride = cameraImage.planes[1].bytesPerPixel!;
+    final uvRowStride = cameraImage.planes[1].bytesPerRow;
+    final uvPixelStride = cameraImage.planes[1].bytesPerPixel!;
 
-    final image = imglib.Image(width: imageWidth, height: imageHeight);
-
-    for (int h = 0; h < imageHeight; h++) {
+    for (int h = 0; h < height; h++) {
       int uvh = (h / 2).floor();
 
-      for (int w = 0; w < imageWidth; w++) {
+      for (int w = 0; w < width; w++) {
         int uvw = (w / 2).floor();
 
         final yIndex = (h * yRowStride) + (w * yPixelStride);
-
-        // Y plane should have positive values belonging to [0...255]
         final int y = yBuffer[yIndex];
 
-        // U/V Values are subsampled i.e. each pixel in U/V chanel in a
-        // YUV_420 image act as chroma value for 4 neighbouring pixels
-        final int uvIndex = (uvh * uvRowStride) + (uvw * uvPixelStride);
-
-        // U/V values ideally fall under [-0.5, 0.5] range. To fit them into
-        // [0, 255] range they are scaled up and centered to 128.
-        // Operation below brings U/V values to [-128, 127].
+        final uvIndex = (uvh * uvRowStride) + (uvw * uvPixelStride);
         final int u = uBuffer[uvIndex];
         final int v = vBuffer[uvIndex];
 
-        // Compute RGB values per formula above.
         int r = (y + v * 1436 / 1024 - 179).round();
         int g = (y - u * 46549 / 131072 + 44 - v * 93604 / 131072 + 91).round();
         int b = (y + u * 1814 / 1024 - 227).round();
@@ -76,7 +110,8 @@ class ImageUtils {
         g = g.clamp(0, 255);
         b = b.clamp(0, 255);
 
-        image.setPixelRgb(w, h, r, g, b);
+        final (newX, newY) = getRotatedPosition(w, h);
+        image.setPixelRgb(newX, newY, r, g, b);
       }
     }
 
