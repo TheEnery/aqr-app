@@ -8,6 +8,7 @@ class TestConsts {
   static const sampleSize = 100;
   static const samplesPerRow = 8;
   static const samplesPerColumn = 10;
+  static const samplesCount = samplesPerRow * samplesPerColumn;
   static const imageWidth = sampleSize * samplesPerRow;
   static const imageHeight = sampleSize * samplesPerColumn;
 }
@@ -36,6 +37,24 @@ class TestFuncs {
       imglib.drawString(image, colorRgb8.toString(),
           font: imglib.arial14, x: x, y: y);
     }
+
+    File('image_generators/output/$filename.png')
+        .writeAsBytes(imglib.encodePng(image));
+  }
+
+  static void drawImage(imglib.Image Function() build, String filename) {
+    final image = build();
+
+    File('image_generators/output/$filename.png')
+        .writeAsBytes(imglib.encodePng(image));
+  }
+
+  static void drawDefaultImage(
+      void Function(imglib.Image image) build, String filename) {
+    final image = imglib.Image(
+        width: TestConsts.imageWidth, height: TestConsts.imageHeight);
+
+    build(image);
 
     File('image_generators/output/$filename.png')
         .writeAsBytes(imglib.encodePng(image));

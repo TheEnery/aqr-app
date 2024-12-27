@@ -59,6 +59,7 @@ List<RgbList> generatePalettesImage() {
   }
 
   final contrastColors = _getMaxContrastColors(16);
+  //[[0,0,0],[255,255,255],[75,125,135],[255,145,160],[]]
 
   return rgb8samples +
       rgb16samplesExtension +

@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:cqr/camera_controller_extension.dart';
 import 'package:flutter/material.dart';
 
 import 'file:///home/enery/Documents/cqr/test/image_testers/test_color_difference.dart';
 import 'file:///home/enery/Documents/cqr/test/image_testers/test_palette_difference.dart';
+import 'file:///home/enery/Documents/cqr/test/image_testers/test_color_correction_by_inv_lerp.dart';
+import 'file:///home/enery/Documents/cqr/test/image_testers/test_resolution.dart';
+import 'package:image/image.dart' as imglib;
 
 late List<CameraDescription> _cameras;
 
@@ -39,6 +44,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late CameraController controller;
+  double exposureValue = 0.0;
+  late double exposureStep;
+  late double minExposure;
+  late double maxExposure;
+  Completer initialized = Completer();
+  bool exposureSettingDone = true;
 
   @override
   void initState() {
@@ -50,11 +61,17 @@ class _HomeScreenState extends State<HomeScreen> {
       enableAudio: false,
     );
 
-    controller.initialize().then((_) {
+    controller.initialize().then((_) async {
       if (!mounted) {
         return;
       }
-      setState(() {});
+
+      await controller.setExposureMode(ExposureMode.locked);
+      minExposure = await controller.getMinExposureOffset();
+      maxExposure = await controller.getMaxExposureOffset();
+      exposureStep = await controller.getExposureOffsetStepSize();
+
+      initialized.complete();
     }).catchError((Object e) {
       if (e is CameraException) {
         switch (e.code) {
@@ -82,16 +99,55 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Scanner'),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _getCamera(),
-            _getButtons(),
-          ],
-        ),
+      body: FutureBuilder(
+        future: initialized.future,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text("Something went wrong"),
+            );
+          } else if (snapshot.connectionState == ConnectionState.done) {
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _getCamera(),
+                  _getButtons(),
+                  _getExposureSlider(),
+                ],
+              ),
+            );
+          } else {
+            return const Center(
+              child: Text("Initializing..."),
+            );
+          }
+        },
       ),
     );
+  }
+
+  Widget _getExposureSlider() {
+    int? divisions = (exposureStep == 0.0)
+        ? null
+        : ((maxExposure - minExposure) / exposureStep).round();
+
+    return Slider(
+        label: exposureValue.toStringAsFixed(3),
+        value: exposureValue,
+        min: minExposure,
+        max: maxExposure,
+        divisions: divisions,
+        onChanged: (value) async {
+          if (exposureSettingDone) {
+            exposureSettingDone = false;
+            setState(() {
+              exposureValue = value;
+            });
+            await controller.setExposureOffset(exposureValue);
+            exposureSettingDone = true;
+          }
+        });
   }
 
   Widget _getButtons() {
@@ -102,6 +158,8 @@ class _HomeScreenState extends State<HomeScreen> {
           TextButton(
             onPressed: () async {
               final image = await controller.inMemoryImage();
+
+              //imglib.adjustColor(image, gamma: 1 / 2.2);
 
               final pixel = image.getPixel(
                   (image.width / 2).round(), (image.height / 2).round());
@@ -176,6 +234,34 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             child: const Text('Test2'),
           ),
+          // const SizedBox(width: 16.0),
+          // TextButton(
+          //   onPressed: () async {
+          //     final image = await controller.inMemoryImage();
+
+          //     //imglib.adjustColor(image, gamma: 1 / 2.2);
+
+          //     if (context.mounted) {
+          //       showBottomSheet(
+          //           context: context,
+          //           builder: (context) => testColorCorrectionByInvLerp(image));
+          //     }
+          //   },
+          //   child: const Text('CRT1'),
+          // ),
+          const SizedBox(width: 16.0),
+          TextButton(
+            onPressed: () async {
+              final image = await controller.inMemoryImage();
+
+              if (context.mounted) {
+                showBottomSheet(
+                    context: context,
+                    builder: (context) => testResolution(image));
+              }
+            },
+            child: const Text('Res1'),
+          ),
         ],
       );
     });
@@ -189,14 +275,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return CameraPreview(
       controller,
       child: Center(
-        child: Container(
-          width: 4,
-          height: 4,
-          decoration: BoxDecoration(
-            border: Border.all(width: 1),
-          ),
-        ),
-      ),
+          child:
+              // Container(
+              //   width: 4,
+              //   height: 4,
+              //   decoration: BoxDecoration(
+              //     border: Border.all(width: 1),
+              //   ),
+              // ),
+              Divider()),
     );
   }
 }
