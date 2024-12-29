@@ -1,19 +1,15 @@
-import 'package:camera/camera.dart';
-import 'package:cqr/camera_controller_extension.dart';
+import 'package:cqr/widgets/generator_page.dart';
+import 'package:cqr/widgets/scanner_page.dart';
 import 'package:flutter/material.dart';
-import 'package:image/image.dart' as imglib;
-
-late List<CameraDescription> _cameras;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  _cameras = await availableCameras();
-  runApp(const MainApp());
+  runApp(const CqrApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class CqrApp extends StatelessWidget {
+  const CqrApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -45,67 +41,31 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late CameraController controller;
-
-  @override
-  void initState() {
-    super.initState();
-
-    controller = CameraController(
-      _cameras[0],
-      ResolutionPreset.max,
-      enableAudio: false,
-    );
-
-    controller.initialize().then((_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {});
-    }).catchError((Object e) {
-      if (e is CameraException) {
-        switch (e.code) {
-          case 'CameraAccessDenied':
-            debugPrint('Camera access denied.');
-            break;
-          default:
-            debugPrint('Camera exception. Code: ${e.code}');
-            break;
-        }
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
+  int currentPageIndex = 0;
 
   @override
   Widget build(BuildContext context) {
+    final pages = [const ScannerPage(), const GeneratorPage()];
     return Scaffold(
-      body: SafeArea(child: Center(child: _getCamera())),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final image = await controller.inMemoryImage();
-          if (!context.mounted) return;
-          showDialog(
-            context: context,
-            builder: (context) => Image.memory(imglib.encodeBmp(image)),
-          );
+      body: SafeArea(child: pages[currentPageIndex]),
+      bottomNavigationBar: NavigationBar(
+        destinations: const <Widget>[
+          NavigationDestination(
+            icon: Icon(Icons.qr_code_scanner),
+            label: 'Scanner',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.qr_code),
+            label: 'Generator',
+          ),
+        ],
+        onDestinationSelected: (value) {
+          setState(() {
+            currentPageIndex = value;
+          });
         },
-        child: const Text('Scan'),
+        selectedIndex: currentPageIndex,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
-  }
-
-  Widget _getCamera() {
-    if (!controller.value.isInitialized) {
-      return const Text("Something went wrong");
-    }
-
-    return CameraPreview(controller);
   }
 }
