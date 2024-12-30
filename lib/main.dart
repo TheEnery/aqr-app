@@ -1,15 +1,15 @@
-import 'package:cqr/widgets/generator_page.dart';
-import 'package:cqr/widgets/scanner_page.dart';
+import 'package:aqr/widgets/generator_page.dart';
+import 'package:aqr/widgets/scanner_page.dart';
 import 'package:flutter/material.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(const CqrApp());
+  runApp(const AqrApp());
 }
 
-class CqrApp extends StatelessWidget {
-  const CqrApp({super.key});
+class AqrApp extends StatelessWidget {
+  const AqrApp({super.key});
 
   @override
   Widget build(BuildContext context) {

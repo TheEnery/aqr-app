@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:camera/camera.dart';
-import 'package:cqr/core/image_converter.dart';
+import 'package:aqr/core/image_converter.dart';
 import 'package:image/image.dart' as imglib;
 
 extension CameraControllerExtension on CameraController {

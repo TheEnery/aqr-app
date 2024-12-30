@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:camera/camera.dart';
-import 'package:cqr/core/camera_controller_extension.dart';
-import 'package:cqr/widgets/loading_widget.dart';
+import 'package:aqr/core/camera_controller_extension.dart';
+import 'package:aqr/widgets/loading_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as imglib;

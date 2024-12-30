@@ -1,3 +1,3 @@
-# cqr
+# aqr
 
-A new Flutter project.
+App for generating and scanning advanced QR codes.

@@ -1,5 +1,5 @@
-name: cqr
-description: "A new Flutter project."
+name: aqr
+description: 'App for generating and scanning advanced QR codes.'
 publish_to: 'none'
 version: 0.1.0
 
